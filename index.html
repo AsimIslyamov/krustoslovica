@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8">
+  <title>Кръстословица</title>
+  <style>
+    @font-face {
+    src: url(Rubik-VariableFont_wght.ttf);
+    font-family: Rubik;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f0f0f0;
+      background-image: url("atom_background.png") ;
+      overflow: hidden;
+    }
+    .crossword {
+      display: grid;
+      grid-template-rows: repeat(6, 44px);
+      grid-template-columns: repeat(12, 40px);
+      gap: 4px;
+      row-gap: 6px;
+      background: #333;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .cell {
+      width: 40px;
+      height: 44px;
+      background: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    input {
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+      border: none;
+      text-transform: uppercase;
+    }
+    input.correct {
+      background-color: #a8e6a1;
+    }
+    input.incorrect {
+      background-color: #ec929a;
+    }
+    /* Жълт фон за избраните клетки */
+    input.yellow {
+      background-color: #fff38b; /* Светло жълто */
+    }
+    /* Тъмно жълто за правилни букви в клетки с жълт фон */
+    input.correct-yellow {
+      background-color: #f9d835; /* Малко по-тъмно жълто */
+    }
+
+    .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgb(116, 116, 116);
+    border-radius: 8px;
+    max-width: 720px;
+    }
+
+  .question-text {
+    color: whitesmoke;
+    margin-top: 20px;
+    font-family: Rubik;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    max-width: 90%;
+    min-height: 80px; /* Резервирано място за 2-3 реда текст */
+    padding: 10px;
+    } 
+  </style>
+</head>
+<body>
+  
+  <div class="container">
+    <div class="crossword" id="crossword"></div>
+    <div id="question" class="question-text"></div>
+  </div>
+
+  <script>
+    const words = [
+      "ГЕНОМНИ",
+      "ИЗМЕНЧИВОСТ",
+      "НЮТОН",
+      "ФЕНОТИПНИ",
+      "ГЕНОТИП",
+      "ПОЛ"
+    ];
+
+    const highlightIndices = [
+      [0, 6],
+      [1, 1],
+      [2, 3],
+      [3, 4],
+      [4, 3],
+      [5, 0]
+    ];
+
+    const crossword = document.getElementById("crossword");
+    const startCol = 6;
+    const inputs = [];
+    const inputGrid = Array.from({ length: 6 }, () => Array(12).fill(null));
+
+    // Клетки за вертикалната дума "ИЗОТОП"
+    const yellowCells = [
+      { row: 0, col: 6 },  // Седмото квадратче от първия ред
+      { row: 1, col: 6 },  // Второто квадратче от втория ред
+      { row: 2, col: 6 },  // Четвъртото квадратче от третия ред
+      { row: 3, col: 6 },  // Петото квадратче от четвъртия ред
+      { row: 4, col: 6 },  // Четвъртото квадратче от петия ред
+      { row: 5, col: 6 }   // Първото квадратче от шестия ред
+    ];
+
+    for (let row = 0; row < words.length; row++) {
+      const word = words[row];
+      const highlightCol = highlightIndices[row][1];
+
+      for (let col = 0; col < word.length; col++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+
+        const gridColumn = startCol - highlightCol + col;
+        cell.style.gridRow = row + 1;
+        cell.style.gridColumn = gridColumn + 1;
+
+        const input = document.createElement("input");
+        input.maxLength = 1;
+        input.dataset.row = row;
+        input.dataset.col = gridColumn;
+
+        // Проверка дали текущото квадратче е в списъка с жълти клетки
+        if (yellowCells.some(cell => cell.row === row && cell.col === gridColumn)) {
+          input.classList.add("yellow");  // Добавяне на клас за жълт фон
+        }
+
+        input.addEventListener("input", () => {
+          input.value = input.value.toUpperCase();
+          if (input.value === word[col]) {
+            input.classList.add("correct");
+            input.classList.remove("incorrect");
+            
+            // Ако клетката е с жълт фон и въведената буква е правилна, сменяме фона на по-тъмно жълто
+            if (input.classList.contains("yellow")) {
+              input.classList.add("correct-yellow");
+            }
+          } else {
+            input.classList.remove("correct");
+            input.classList.add("incorrect");
+            input.classList.remove("correct-yellow");  // Премахване на тъмния жълт фон ако буквата е грешна
+          }
+
+          const currentIndex = inputs.indexOf(input);
+          if (input.value !== "" && currentIndex !== -1 && currentIndex + 1 < inputs.length) {
+            inputs[currentIndex + 1].focus();
+          }
+        });
+
+        input.addEventListener("keydown", (e) => {
+          const currentIndex = inputs.indexOf(input);
+          const row = parseInt(input.dataset.row);
+          const col = parseInt(input.dataset.col);
+
+          if (e.key === "Backspace" && input.value === "") {
+            if (currentIndex > 0) {
+              e.preventDefault();
+              inputs[currentIndex - 1].value = "";
+              inputs[currentIndex - 1].classList.remove("correct", "incorrect", "correct-yellow");
+              inputs[currentIndex - 1].focus();
+            }
+          } else if (e.key === "ArrowLeft") {
+            if (currentIndex > 0) {
+              e.preventDefault();
+              inputs[currentIndex - 1].focus();
+            }
+          } else if (e.key === "ArrowRight") {
+            if (currentIndex + 1 < inputs.length) {
+              e.preventDefault();
+              inputs[currentIndex + 1].focus();
+            }
+          } else if (e.key === "ArrowUp") {
+            if (row > 0 && inputGrid[row - 1][col]) {
+              e.preventDefault();
+              inputGrid[row - 1][col].focus();
+            }
+          } else if (e.key === "ArrowDown") {
+            if (row + 1 < inputGrid.length && inputGrid[row + 1][col]) {
+              e.preventDefault();
+              inputGrid[row + 1][col].focus();
+            }
+          }
+        });
+
+
+        input.addEventListener("focus", () => {
+          const row = parseInt(input.dataset.row);
+          updateQuestion(row);
+        });
+
+
+
+        inputs.push(input);
+        inputGrid[row][gridColumn] = input;
+        cell.appendChild(input);
+        crossword.appendChild(cell);
+
+        
+
+        const questionBox = document.getElementById("question");
+
+        const questions = [
+          "Мутации, свързани с промяна в броя на хромозомите се наричат...",
+          "Кое е основното свойство на организмите за придобиване на нови белези?",
+          "Известен физик със своите принципи на механиката.",
+          "Ненаследствени модификации засягащи фенотипа са...",
+          "Всички гени в даден организъм.",
+          "Съвкупността от белези и свойства, които осигуряват възпроизводството на организмите и предаването на наследствената информация в поколенията."
+        ];
+              
+        // Обновява текста в долната част спрямо реда
+        function updateQuestion(row) {
+          if (row >= 0 && row < questions.length) {
+            questionBox.textContent = questions[row];
+          } else {
+            questionBox.textContent = "";
+          }
+        }
+
+      }
+    }
+  </script>
+</body>
+</html>
